@@ -1073,7 +1073,8 @@
         // 뉴스 업데이트 (cryptopanic API)
         async function updateNews() {
             try {
-                const res = await fetch('https://cryptopanic.com/api/v1/posts/?auth_token=demo&public=true');
+                const url = 'https://cryptopanic.com/api/v1/posts/?auth_token=demo&public=true';
+                const res = await fetch('/api/cryptopanic?url=' + encodeURIComponent(url));
                 const data = await res.json();
                 const newsHTML = data.results.slice(0, 5).map(item => `
                     <div class="news-item">
