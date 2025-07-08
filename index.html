@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoVision Pro - 실시간 암호화폐 대시보드</title>
+    <title>Crypto Trader Pro - 실시간 암호화폐 트레이딩 대시보드</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -16,7 +16,11 @@
             --accent-green: #00d395;
             --accent-red: #ff3860;
             --accent-blue: #3b82f6;
+            --accent-yellow: #fbbf24;
+            --accent-purple: #8b5cf6;
             --border-color: #2a2d33;
+            --gradient-green: linear-gradient(135deg, #00d395 0%, #00a571 100%);
+            --gradient-red: linear-gradient(135deg, #ff3860 0%, #ff1744 100%);
         }
 
         [data-theme="light"] {
@@ -111,9 +115,28 @@
         .stat-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 1.5rem;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+            transform: rotate(45deg);
+            transition: all 0.5s;
+            opacity: 0;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
         }
 
         .stat-card:hover {
@@ -121,16 +144,45 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        .stat-label {
+        .stat-card.glow-green:hover {
+            box-shadow: 0 10px 30px rgba(0, 211, 149, 0.3);
+            border-color: var(--accent-green);
+        }
+
+        .stat-card.glow-blue:hover {
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+            border-color: var(--accent-blue);
+        }
+
+        .stat-card.glow-yellow:hover {
+            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);
+            border-color: var(--accent-yellow);
+        }
+
+        .stat-card.glow-purple:hover {
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+            border-color: var(--accent-purple);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             color: var(--text-secondary);
             font-size: 0.875rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
         }
 
         .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
+            font-size: 2.25rem;
+            font-weight: 700;
             margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-sub {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
         }
 
         .stat-change {
@@ -138,6 +190,7 @@
             display: flex;
             align-items: center;
             gap: 0.25rem;
+            font-weight: 600;
         }
 
         .positive {
@@ -300,27 +353,301 @@
         }
 
         /* 검색 바 */
-        .search-bar {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
+        /* 시장 상태 표시 */
+        .market-status {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .status-indicator {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            width: 300px;
-        }
-
-        .search-bar input {
-            background: none;
-            border: none;
-            color: var(--text-primary);
-            outline: none;
-            width: 100%;
-        }
-
-        .search-bar i {
+            font-size: 0.875rem;
             color: var(--text-secondary);
+        }
+
+        .status-indicator i {
+            color: var(--accent-green);
+            font-size: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .fear-greed {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .fear-greed .value {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .refresh-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            transform: rotate(180deg);
+        }
+
+        /* 급등/급락 알림 */
+        .alert-banner {
+            background: var(--gradient-red);
+            color: white;
+            padding: 0.75rem;
+            text-align: center;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .alert-banner.positive {
+            background: var(--gradient-green);
+        }
+
+        /* 실시간 티커 */
+        .ticker-container {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 0;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .ticker-content {
+            display: flex;
+            gap: 3rem;
+            animation: scroll 30s linear infinite;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .ticker-item img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .ticker-price {
+            font-weight: 600;
+        }
+
+        .ticker-change {
+            font-size: 0.875rem;
+        }
+
+        /* 뷰 옵션 버튼 */
+        .view-options {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .view-btn.active,
+        .view-btn:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        /* 급등/급락 그리드 */
+        .movers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .movers-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .movers-card h3 {
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .movers-card.gainers h3 {
+            color: var(--accent-green);
+        }
+
+        .movers-card.losers h3 {
+            color: var(--accent-red);
+        }
+
+        .movers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .mover-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .mover-item:hover {
+            transform: translateX(5px);
+        }
+
+        .mover-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .mover-change {
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+
+        /* 정보 그리드 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .info-card h3 {
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .news-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .news-item {
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .news-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .news-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .news-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .exchange-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .exchange-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .exchange-name {
+            font-weight: 600;
+        }
+
+        .exchange-price {
+            text-align: right;
+        }
+
+        .price-value {
+            font-weight: 700;
+        }
+
+        .price-diff {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* 테이블 개선 */
+        .crypto-table th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .crypto-table td {
+            font-weight: 500;
+        }
+
+        .change-1h,
+        .change-24h,
+        .change-7d {
+            font-weight: 700;
+        }
+
+        /* 반응형 개선 */
+        @media (max-width: 1024px) {
+            .movers-grid,
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -329,83 +656,102 @@
     <header class="header">
         <div class="header-content">
             <div class="logo">
-                <i class="fas fa-chart-line"></i>
-                <span>CryptoVision Pro</span>
+                <i class="fas fa-rocket"></i>
+                <span>Crypto Trader Pro</span>
             </div>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="암호화폐 검색...">
+            <div class="market-status">
+                <span class="status-indicator" id="market-status">
+                    <i class="fas fa-circle"></i> 시장 활성화
+                </span>
+                <span class="fear-greed" id="fear-greed">
+                    공포&탐욕 지수: <span class="value">--</span>
+                </span>
             </div>
             <div class="nav-buttons">
                 <button class="theme-toggle" onclick="toggleTheme()">
                     <i class="fas fa-moon" id="theme-icon"></i>
                 </button>
-                <div style="position: relative;">
-                    <button class="theme-toggle">
-                        <i class="fas fa-bell"></i>
-                    </button>
-                    <span class="notification-badge">3</span>
-                </div>
+                <button class="refresh-btn" onclick="refreshAllData()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
             </div>
         </div>
     </header>
 
+    <!-- 실시간 티커 -->
+    <div class="ticker-container">
+        <div class="ticker-content" id="ticker-content">
+            <!-- 동적으로 생성됨 -->
+        </div>
+    </div>
+
     <!-- 메인 컨텐츠 -->
     <main class="container">
-        <!-- 통계 카드 -->
+        <!-- 핵심 지표 카드 -->
         <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">전체 시가총액</div>
-                <div class="stat-value">$2.45T</div>
-                <div class="stat-change positive">
+            <div class="stat-card glow-green" id="btc-card">
+                <div class="stat-header">
+                    <img src="https://assets.coingecko.com/coins/images/1/small/bitcoin.png" width="24" height="24">
+                    <span>BTC 도미넌스</span>
+                </div>
+                <div class="stat-value" id="btc-dominance">--%</div>
+                <div class="stat-change" id="btc-dominance-change">
                     <i class="fas fa-arrow-up"></i>
-                    <span>+5.23%</span>
+                    <span>--</span>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">24시간 거래량</div>
-                <div class="stat-value">$98.5B</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>+12.45%</span>
+            <div class="stat-card glow-blue" id="volume-card">
+                <div class="stat-header">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>24H 거래량</span>
                 </div>
+                <div class="stat-value" id="total-volume">$--B</div>
+                <div class="stat-sub">상위 10개 코인</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">비트코인 도미넌스</div>
-                <div class="stat-value">48.3%</div>
-                <div class="stat-change negative">
-                    <i class="fas fa-arrow-down"></i>
-                    <span>-0.85%</span>
+            <div class="stat-card glow-yellow" id="gas-card">
+                <div class="stat-header">
+                    <i class="fas fa-gas-pump"></i>
+                    <span>ETH Gas</span>
                 </div>
+                <div class="stat-value" id="eth-gas">-- Gwei</div>
+                <div class="stat-sub">송금비: $<span id="eth-transfer-fee">--</span></div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">활성 암호화폐</div>
-                <div class="stat-value">9,842</div>
-                <div class="stat-change positive">
+            <div class="stat-card glow-purple" id="trending-card">
+                <div class="stat-header">
+                    <i class="fas fa-fire"></i>
+                    <span>실시간 급등</span>
+                </div>
+                <div class="stat-value" id="top-gainer">--</div>
+                <div class="stat-change positive" id="top-gainer-percent">
                     <i class="fas fa-arrow-up"></i>
-                    <span>+125</span>
+                    <span>+-%</span>
                 </div>
             </div>
         </div>
 
-        <!-- 실시간 암호화폐 가격 -->
+        <!-- 실시간 TOP 10 암호화폐 -->
         <div class="crypto-section">
             <div class="section-header">
-                <h2 class="section-title">실시간 암호화폐 가격</h2>
-                <button class="theme-toggle">
-                    <i class="fas fa-refresh"></i> 새로고침
-                </button>
+                <h2 class="section-title">
+                    <i class="fas fa-crown"></i> TOP 10 암호화폐
+                </h2>
+                <div class="view-options">
+                    <button class="view-btn active" onclick="changeView('price')">가격</button>
+                    <button class="view-btn" onclick="changeView('volume')">거래량</button>
+                    <button class="view-btn" onclick="changeView('gainers')">급등</button>
+                </div>
             </div>
             <table class="crypto-table">
                 <thead>
                     <tr>
                         <th>순위</th>
-                        <th>이름</th>
-                        <th>가격</th>
-                        <th>24시간 변동</th>
-                        <th>시가총액</th>
-                        <th>거래량(24h)</th>
-                        <th>차트</th>
+                        <th>코인</th>
+                        <th>현재가</th>
+                        <th>1H</th>
+                        <th>24H</th>
+                        <th>7D</th>
+                        <th>거래량/시총</th>
+                        <th>7일 차트</th>
                     </tr>
                 </thead>
                 <tbody id="crypto-tbody">
@@ -414,66 +760,70 @@
             </table>
         </div>
 
-        <!-- 차트 섹션 -->
-        <div class="chart-grid">
-            <div class="chart-card">
-                <h3 class="section-title">시가총액 분포</h3>
-                <div class="chart-container">
-                    <canvas id="marketCapChart"></canvas>
+        <!-- 실시간 급등/급락 -->
+        <div class="movers-grid">
+            <div class="movers-card gainers">
+                <h3><i class="fas fa-rocket"></i> 실시간 급등 TOP 5</h3>
+                <div id="top-gainers" class="movers-list">
+                    <!-- 동적으로 생성됨 -->
                 </div>
             </div>
-            <div class="chart-card">
-                <h3 class="section-title">가격 추세</h3>
-                <div class="chart-container">
-                    <canvas id="priceChart"></canvas>
+            <div class="movers-card losers">
+                <h3><i class="fas fa-chart-down"></i> 실시간 급락 TOP 5</h3>
+                <div id="top-losers" class="movers-list">
+                    <!-- 동적으로 생성됨 -->
                 </div>
             </div>
         </div>
 
-        <!-- 포트폴리오 섹션 -->
-        <div class="portfolio-section">
-            <div class="section-header">
-                <h2 class="section-title">내 포트폴리오</h2>
-                <button class="theme-toggle">
-                    <i class="fas fa-plus"></i> 추가
-                </button>
-            </div>
-            <div class="portfolio-item">
-                <div class="crypto-info">
-                    <div class="crypto-icon">BTC</div>
-                    <div>
-                        <div style="font-weight: 600;">Bitcoin</div>
-                        <div style="color: var(--text-secondary); font-size: 0.875rem;">0.5 BTC</div>
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 600;">$21,500</div>
-                    <div class="stat-change positive" style="font-size: 0.875rem;">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>+5.23%</span>
-                    </div>
+        <!-- 차트 섹션 -->
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3 class="section-title">
+                    <i class="fas fa-chart-line"></i> BTC/ETH 실시간 차트
+                </h3>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
                 </div>
             </div>
-            <div class="portfolio-item">
-                <div class="crypto-info">
-                    <div class="crypto-icon" style="background: #627eea;">ETH</div>
-                    <div>
-                        <div style="font-weight: 600;">Ethereum</div>
-                        <div style="color: var(--text-secondary); font-size: 0.875rem;">2.5 ETH</div>
-                    </div>
+            <div class="chart-card">
+                <h3 class="section-title">
+                    <i class="fas fa-chart-pie"></i> 도미넌스 분포
+                </h3>
+                <div class="chart-container">
+                    <canvas id="dominanceChart"></canvas>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 600;">$4,250</div>
-                    <div class="stat-change positive" style="font-size: 0.875rem;">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>+3.15%</span>
-                    </div>
+            </div>
+        </div>
+
+        <!-- 추가 정보 섹션 -->
+        <div class="info-grid">
+            <div class="info-card">
+                <h3><i class="fas fa-newspaper"></i> 실시간 뉴스</h3>
+                <div id="crypto-news" class="news-list">
+                    <!-- 동적으로 생성됨 -->
+                </div>
+            </div>
+            <div class="info-card">
+                <h3><i class="fas fa-chart-bar"></i> 거래소별 가격 차이</h3>
+                <div id="exchange-prices" class="exchange-list">
+                    <!-- 동적으로 생성됨 -->
                 </div>
             </div>
         </div>
     </main>
 
     <script>
+        // 전역 변수
+        let allCryptoData = [];
+        let topGainers = [];
+        let topLosers = [];
+        let currentView = 'price';
+        let btcDominance = 0;
+        let totalMarketCap = 0;
+        let totalVolume = 0;
+        let ethGasPrice = 0;
+
         // 테마 토글
         function toggleTheme() {
             const body = document.body;
@@ -485,90 +835,293 @@
             icon.className = newTheme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
         }
 
-        // CoinGecko API에서 실시간 데이터 가져오기
-        const coinIds = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'ripple'];
-        let cryptoData = [];
+        // 뷰 변경
+        function changeView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderCryptoTable();
+        }
 
-        async function fetchCryptoData() {
-            const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds.join(',')}`;
+        // 모든 데이터 새로고침
+        function refreshAllData() {
+            fetchAllData();
+            const btn = document.querySelector('.refresh-btn i');
+            btn.style.animation = 'none';
+            setTimeout(() => {
+                btn.style.animation = 'spin 1s linear infinite';
+            }, 10);
+        }
+
+        // API 호출 함수들
+        async function fetchAllData() {
+            await Promise.all([
+                fetchTop100Cryptos(),
+                fetchGlobalData(),
+                fetchTrendingCoins(),
+                fetchEthGasPrice()
+            ]);
+            updateAllUI();
+        }
+
+        // TOP 100 암호화폐 데이터
+        async function fetchTop100Cryptos() {
             try {
-                const res = await fetch(url);
+                const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d');
                 const data = await res.json();
-                cryptoData = data.map((coin, idx) => ({
-                    rank: coin.market_cap_rank,
-                    symbol: coin.symbol.toUpperCase(),
-                    name: coin.name,
-                    price: coin.current_price,
-                    change: coin.price_change_percentage_24h,
-                    marketCap: coin.market_cap,
-                    volume: coin.total_volume,
-                    image: coin.image
-                }));
-                renderCryptoTable();
+                allCryptoData = data;
+                
+                // 급등/급락 계산
+                const sorted24h = [...data].sort((a, b) => b.price_change_percentage_24h - a.price_change_percentage_24h);
+                topGainers = sorted24h.slice(0, 5);
+                topLosers = sorted24h.slice(-5).reverse();
             } catch (e) {
-                console.error('API 오류:', e);
+                console.error('TOP 100 API 오류:', e);
             }
+        }
+
+        // 글로벌 시장 데이터
+        async function fetchGlobalData() {
+            try {
+                const res = await fetch('https://api.coingecko.com/api/v3/global');
+                const data = await res.json();
+                const globalData = data.data;
+                
+                btcDominance = globalData.market_cap_percentage.btc;
+                totalMarketCap = globalData.total_market_cap.usd;
+                totalVolume = globalData.total_volume.usd;
+            } catch (e) {
+                console.error('글로벌 데이터 API 오류:', e);
+            }
+        }
+
+        // 트렌딩 코인
+        async function fetchTrendingCoins() {
+            try {
+                const res = await fetch('https://api.coingecko.com/api/v3/search/trending');
+                const data = await res.json();
+                // 트렌딩 데이터 처리
+            } catch (e) {
+                console.error('트렌딩 API 오류:', e);
+            }
+        }
+
+        // ETH 가스 가격 (대체 API 또는 하드코딩)
+        async function fetchEthGasPrice() {
+            // Etherscan API 또는 다른 소스 사용
+            // 여기서는 예시로 하드코딩
+            ethGasPrice = Math.floor(Math.random() * 50) + 20;
+        }
+
+        // 모든 UI 업데이트
+        function updateAllUI() {
+            updateStatCards();
+            updateTicker();
+            renderCryptoTable();
+            updateMovers();
+            updateCharts();
+            updateNews();
+            updateExchangePrices();
+        }
+
+        // 상단 통계 카드 업데이트
+        function updateStatCards() {
+            // BTC 도미넌스
+            document.getElementById('btc-dominance').textContent = `${btcDominance.toFixed(1)}%`;
+            const btcChange = document.getElementById('btc-dominance-change');
+            btcChange.innerHTML = `<i class="fas fa-arrow-${btcDominance > 48 ? 'up' : 'down'}"></i> <span>${btcDominance > 48 ? '+' : '-'}${Math.abs(btcDominance - 48).toFixed(2)}%</span>`;
+            btcChange.className = btcDominance > 48 ? 'stat-change positive' : 'stat-change negative';
+
+            // 거래량
+            const top10Volume = allCryptoData.slice(0, 10).reduce((sum, coin) => sum + coin.total_volume, 0);
+            document.getElementById('total-volume').textContent = `$${(top10Volume / 1000000000).toFixed(1)}B`;
+
+            // ETH Gas
+            document.getElementById('eth-gas').textContent = `${ethGasPrice} Gwei`;
+            document.getElementById('eth-transfer-fee').textContent = (ethGasPrice * 0.000021 * 1700).toFixed(2);
+
+            // 실시간 급등
+            if (topGainers.length > 0) {
+                const topGainer = topGainers[0];
+                document.getElementById('top-gainer').textContent = topGainer.symbol.toUpperCase();
+                document.getElementById('top-gainer-percent').innerHTML = `<i class="fas fa-arrow-up"></i> <span>+${topGainer.price_change_percentage_24h.toFixed(2)}%</span>`;
+            }
+        }
+
+        // 실시간 티커 업데이트
+        function updateTicker() {
+            const tickerContent = document.getElementById('ticker-content');
+            const tickerHTML = allCryptoData.slice(0, 20).map(coin => `
+                <div class="ticker-item">
+                    <img src="${coin.image}" alt="${coin.symbol}">
+                    <span>${coin.symbol.toUpperCase()}</span>
+                    <span class="ticker-price">$${coin.current_price.toLocaleString()}</span>
+                    <span class="ticker-change ${coin.price_change_percentage_24h > 0 ? 'positive' : 'negative'}">
+                        ${coin.price_change_percentage_24h > 0 ? '+' : ''}${coin.price_change_percentage_24h.toFixed(2)}%
+                    </span>
+                </div>
+            `).join('');
+            
+            // 무한 스크롤을 위해 복제
+            tickerContent.innerHTML = tickerHTML + tickerHTML;
         }
 
         // 테이블 렌더링
         function renderCryptoTable() {
             const tbody = document.getElementById('crypto-tbody');
-            tbody.innerHTML = cryptoData.map(crypto => `
+            let dataToShow = allCryptoData.slice(0, 10);
+            
+            if (currentView === 'volume') {
+                dataToShow = [...allCryptoData].sort((a, b) => b.total_volume - a.total_volume).slice(0, 10);
+            } else if (currentView === 'gainers') {
+                dataToShow = [...allCryptoData].sort((a, b) => b.price_change_percentage_24h - a.price_change_percentage_24h).slice(0, 10);
+            }
+            
+            tbody.innerHTML = dataToShow.map((crypto, idx) => `
                 <tr>
-                    <td>${crypto.rank}</td>
+                    <td>${currentView === 'price' ? crypto.market_cap_rank : idx + 1}</td>
                     <td>
                         <div class="crypto-info">
-                            <img src="${crypto.image}" alt="${crypto.symbol}" class="crypto-icon" style="background: none; width:32px; height:32px;" />
+                            <img src="${crypto.image}" alt="${crypto.symbol}" style="width:32px; height:32px; border-radius:50%;">
                             <div>
                                 <div style="font-weight: 600;">${crypto.name}</div>
-                                <div style="color: var(--text-secondary); font-size: 0.875rem;">${crypto.symbol}</div>
+                                <div style="color: var(--text-secondary); font-size: 0.875rem;">${crypto.symbol.toUpperCase()}</div>
                             </div>
                         </div>
                     </td>
-                    <td>$${crypto.price.toLocaleString()}</td>
-                    <td class="${crypto.change > 0 ? 'positive' : 'negative'}">
-                        <i class="fas fa-arrow-${crypto.change > 0 ? 'up' : 'down'}"></i>
-                        ${crypto.change ? crypto.change.toFixed(2) : '0.00'}%
+                    <td>$${crypto.current_price < 1 ? crypto.current_price.toFixed(6) : crypto.current_price.toLocaleString()}</td>
+                    <td class="change-1h ${crypto.price_change_percentage_1h_in_currency > 0 ? 'positive' : 'negative'}">
+                        ${crypto.price_change_percentage_1h_in_currency ? crypto.price_change_percentage_1h_in_currency.toFixed(2) : '0.00'}%
                     </td>
-                    <td>$${(crypto.marketCap / 1000000000).toFixed(1)}B</td>
-                    <td>$${(crypto.volume / 1000000000).toFixed(1)}B</td>
+                    <td class="change-24h ${crypto.price_change_percentage_24h > 0 ? 'positive' : 'negative'}">
+                        ${crypto.price_change_percentage_24h ? crypto.price_change_percentage_24h.toFixed(2) : '0.00'}%
+                    </td>
+                    <td class="change-7d ${crypto.price_change_percentage_7d_in_currency > 0 ? 'positive' : 'negative'}">
+                        ${crypto.price_change_percentage_7d_in_currency ? crypto.price_change_percentage_7d_in_currency.toFixed(2) : '0.00'}%
+                    </td>
                     <td>
-                        <canvas id="sparkline-${crypto.rank}" width="100" height="30"></canvas>
+                        <div>$${(crypto.total_volume / 1000000000).toFixed(2)}B</div>
+                        <div style="color: var(--text-secondary); font-size: 0.75rem;">
+                            ${((crypto.total_volume / crypto.market_cap) * 100).toFixed(2)}%
+                        </div>
+                    </td>
+                    <td>
+                        <canvas id="sparkline-${crypto.id}" width="100" height="30"></canvas>
                     </td>
                 </tr>
             `).join('');
 
-            // 스파크라인 차트 그리기 (임시 랜덤)
-            cryptoData.forEach(crypto => {
-                drawSparkline(`sparkline-${crypto.rank}`, crypto.change > 0);
+            // 스파크라인 차트 그리기
+            dataToShow.forEach(crypto => {
+                if (crypto.sparkline_in_7d) {
+                    drawSparklineFromData(`sparkline-${crypto.id}`, crypto.sparkline_in_7d.price);
+                }
             });
         }
 
-        // 색상 생성
-        function getRandomColor() {
-            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-            return colors[Math.floor(Math.random() * colors.length)];
+        // 급등/급락 업데이트
+        function updateMovers() {
+            // 급등
+            const gainersHTML = topGainers.map(coin => `
+                <div class="mover-item">
+                    <div class="mover-info">
+                        <img src="${coin.image}" alt="${coin.symbol}" style="width:24px; height:24px; border-radius:50%;">
+                        <div>
+                            <div style="font-weight:600;">${coin.symbol.toUpperCase()}</div>
+                            <div style="font-size:0.75rem; color:var(--text-secondary);">$${coin.current_price.toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div class="mover-change positive">+${coin.price_change_percentage_24h.toFixed(2)}%</div>
+                </div>
+            `).join('');
+            document.getElementById('top-gainers').innerHTML = gainersHTML;
+
+            // 급락
+            const losersHTML = topLosers.map(coin => `
+                <div class="mover-item">
+                    <div class="mover-info">
+                        <img src="${coin.image}" alt="${coin.symbol}" style="width:24px; height:24px; border-radius:50%;">
+                        <div>
+                            <div style="font-weight:600;">${coin.symbol.toUpperCase()}</div>
+                            <div style="font-size:0.75rem; color:var(--text-secondary);">$${coin.current_price.toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div class="mover-change negative">${coin.price_change_percentage_24h.toFixed(2)}%</div>
+                </div>
+            `).join('');
+            document.getElementById('top-losers').innerHTML = losersHTML;
         }
 
-        // 스파크라인 그리기 (임시 랜덤)
-        function drawSparkline(canvasId, isPositive) {
+        // 뉴스 업데이트 (예시 데이터)
+        function updateNews() {
+            const newsHTML = `
+                <div class="news-item">
+                    <div class="news-title">비트코인, 역대 최고가 경신 임박</div>
+                    <div class="news-time">5분 전</div>
+                </div>
+                <div class="news-item">
+                    <div class="news-title">이더리움 2.0 업그레이드 완료</div>
+                    <div class="news-time">1시간 전</div>
+                </div>
+                <div class="news-item">
+                    <div class="news-title">SEC, 새로운 암호화폐 규제안 발표</div>
+                    <div class="news-time">3시간 전</div>
+                </div>
+            `;
+            document.getElementById('crypto-news').innerHTML = newsHTML;
+        }
+
+        // 거래소별 가격 차이 (예시)
+        function updateExchangePrices() {
+            const btcPrice = allCryptoData.find(coin => coin.id === 'bitcoin')?.current_price || 0;
+            const exchangeHTML = `
+                <div class="exchange-item">
+                    <span class="exchange-name">Binance</span>
+                    <div class="exchange-price">
+                        <div class="price-value">$${btcPrice.toLocaleString()}</div>
+                        <div class="price-diff">기준가</div>
+                    </div>
+                </div>
+                <div class="exchange-item">
+                    <span class="exchange-name">Upbit</span>
+                    <div class="exchange-price">
+                        <div class="price-value">$${(btcPrice * 1.02).toLocaleString()}</div>
+                        <div class="price-diff positive">+2.0%</div>
+                    </div>
+                </div>
+                <div class="exchange-item">
+                    <span class="exchange-name">Coinbase</span>
+                    <div class="exchange-price">
+                        <div class="price-value">$${(btcPrice * 0.995).toLocaleString()}</div>
+                        <div class="price-diff negative">-0.5%</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('exchange-prices').innerHTML = exchangeHTML;
+        }
+
+        // 스파크라인 그리기 (실제 데이터)
+        function drawSparklineFromData(canvasId, data) {
             const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
+            if (!canvas || !data) return;
             
             const ctx = canvas.getContext('2d');
             const width = canvas.width;
             const height = canvas.height;
             
-            // 랜덤 데이터 생성
-            const points = Array.from({length: 10}, () => Math.random() * height);
+            // 데이터 정규화
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            const range = max - min;
             
+            ctx.clearRect(0, 0, width, height);
             ctx.beginPath();
-            ctx.strokeStyle = isPositive ? '#00d395' : '#ff3860';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = data[data.length - 1] > data[0] ? '#00d395' : '#ff3860';
+            ctx.lineWidth = 1.5;
             
-            points.forEach((point, i) => {
-                const x = (width / (points.length - 1)) * i;
-                const y = height - point;
+            data.forEach((value, i) => {
+                const x = (width / (data.length - 1)) * i;
+                const y = height - ((value - min) / range * height * 0.8) - height * 0.1;
                 
                 if (i === 0) {
                     ctx.moveTo(x, y);
@@ -580,21 +1133,100 @@
             ctx.stroke();
         }
 
-        // 시가총액 차트 (임시 하드코딩)
-        function createMarketCapChart() {
-            const ctx = document.getElementById('marketCapChart').getContext('2d');
-            new Chart(ctx, {
+        // 차트 업데이트
+        let priceChart = null;
+        let dominanceChart = null;
+
+        function updateCharts() {
+            // BTC/ETH 가격 차트
+            const btcData = allCryptoData.find(coin => coin.id === 'bitcoin');
+            const ethData = allCryptoData.find(coin => coin.id === 'ethereum');
+            
+            if (btcData && ethData && btcData.sparkline_in_7d && ethData.sparkline_in_7d) {
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                
+                if (priceChart) {
+                    priceChart.destroy();
+                }
+                
+                priceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 24}, (_, i) => `${i}h`),
+                        datasets: [
+                            {
+                                label: 'Bitcoin',
+                                data: btcData.sparkline_in_7d.price.slice(-24),
+                                borderColor: '#f7931a',
+                                backgroundColor: 'rgba(247, 147, 26, 0.1)',
+                                tension: 0.4,
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Ethereum',
+                                data: ethData.sparkline_in_7d.price.slice(-24),
+                                borderColor: '#627eea',
+                                backgroundColor: 'rgba(98, 126, 234, 0.1)',
+                                tension: 0.4,
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#a0a0a0'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#a0a0a0'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#a0a0a0'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 도미넌스 차트
+            const ctx2 = document.getElementById('dominanceChart').getContext('2d');
+            
+            if (dominanceChart) {
+                dominanceChart.destroy();
+            }
+            
+            const top5 = allCryptoData.slice(0, 5);
+            dominanceChart = new Chart(ctx2, {
                 type: 'doughnut',
                 data: {
-                    labels: cryptoData.map(c => c.name),
+                    labels: top5.map(c => c.name),
                     datasets: [{
-                        data: cryptoData.map(c => c.marketCap),
+                        data: top5.map(c => c.market_cap),
                         backgroundColor: [
-                            '#3b82f6',
-                            '#10b981',
-                            '#f59e0b',
-                            '#ef4444',
-                            '#8b5cf6'
+                            '#f7931a',
+                            '#627eea',
+                            '#f0b90b',
+                            '#00d395',
+                            '#52a0ff'
                         ],
                         borderWidth: 0
                     }]
@@ -607,63 +1239,10 @@
                             position: 'right',
                             labels: {
                                 color: '#a0a0a0',
-                                padding: 20
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // 가격 추세 차트 (임시 하드코딩)
-        function createPriceChart() {
-            const ctx = document.getElementById('priceChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['1일', '2일', '3일', '4일', '5일', '6일', '7일'],
-                    datasets: [
-                        {
-                            label: cryptoData[0]?.name || 'Bitcoin',
-                            data: [41000, 42000, 41500, 43000, 42500, 43500, 43000],
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            tension: 0.4
-                        },
-                        {
-                            label: cryptoData[1]?.name || 'Ethereum',
-                            data: [1600, 1650, 1620, 1700, 1680, 1720, 1700],
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#a0a0a0'
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#a0a0a0'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#a0a0a0'
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                }
                             }
                         }
                     }
@@ -673,14 +1252,24 @@
 
         // 초기화
         document.addEventListener('DOMContentLoaded', () => {
-            fetchCryptoData();
-            createMarketCapChart();
-            createPriceChart();
-            // 5초마다 실시간 데이터 갱신
+            fetchAllData();
+            
+            // 10초마다 실시간 데이터 갱신
             setInterval(() => {
-                fetchCryptoData();
-            }, 5000);
+                fetchAllData();
+            }, 10000);
+            
+            // 스피너 애니메이션 CSS 추가
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
         });
     </script>
 </body>
+</html> 
 </html> 
