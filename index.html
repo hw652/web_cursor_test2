@@ -799,7 +799,11 @@
         <!-- 추가 정보 섹션 -->
         <div class="info-grid">
             <div class="info-card">
-                <h3><i class="fas fa-newspaper"></i> 실시간 뉴스</h3>
+                <h3><i class="fas fa-newspaper"></i> 실시간 뉴스
+                    <button class="refresh-btn" style="margin-left:1em; font-size:0.9em; padding:0.3em 0.8em;" onclick="refreshNews()">
+                        <i class="fas fa-sync-alt"></i> 새로고침
+                    </button>
+                </h3>
                 <div id="crypto-news" class="news-list">
                     <!-- 동적으로 생성됨 -->
                 </div>
@@ -1296,6 +1300,11 @@
             } catch (e) {
                 document.querySelector('#fear-greed .value').textContent = '--';
             }
+        }
+
+        // 뉴스만 새로고침
+        function refreshNews() {
+            updateNews();
         }
 
         // 초기화
