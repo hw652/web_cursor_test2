@@ -868,7 +868,8 @@
         // TOP 100 암호화폐 데이터
         async function fetchTop100Cryptos() {
             try {
-                const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d');
+                const url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d';
+                const res = await fetch('/api/coingecko?url=' + encodeURIComponent(url));
                 const data = await res.json();
                 allCryptoData = data;
                 
@@ -884,7 +885,8 @@
         // 글로벌 시장 데이터
         async function fetchGlobalData() {
             try {
-                const res = await fetch('https://api.coingecko.com/api/v3/global');
+                const url = 'https://api.coingecko.com/api/v3/global';
+                const res = await fetch('/api/coingecko?url=' + encodeURIComponent(url));
                 const data = await res.json();
                 const globalData = data.data;
                 
@@ -899,7 +901,8 @@
         // 트렌딩 코인
         async function fetchTrendingCoins() {
             try {
-                const res = await fetch('https://api.coingecko.com/api/v3/search/trending');
+                const url = 'https://api.coingecko.com/api/v3/search/trending';
+                const res = await fetch('/api/coingecko?url=' + encodeURIComponent(url));
                 const data = await res.json();
                 trendingCoins = data.coins.map(c => c.item);
             } catch (e) {
@@ -1087,7 +1090,8 @@
         // 거래소별 가격 차이 (CoinGecko API)
         async function updateExchangePrices() {
             try {
-                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,krw');
+                const url = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,krw';
+                const res = await fetch('/api/coingecko?url=' + encodeURIComponent(url));
                 const data = await res.json();
                 const btc_usd = data.bitcoin.usd;
                 const btc_krw = data.bitcoin.krw;
