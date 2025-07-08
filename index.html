@@ -1,126 +1,672 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>웹 계산기</title>
-  <style>
-    body {
-      background: #f4f4f4;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      font-family: 'Segoe UI', sans-serif;
-    }
-    .calculator {
-      background: #fff;
-      padding: 30px 20px;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
-      width: 320px;
-    }
-    .display {
-      width: 100%;
-      height: 60px;
-      background: #222;
-      color: #fff;
-      font-size: 2rem;
-      border-radius: 8px;
-      text-align: right;
-      padding: 10px;
-      margin-bottom: 16px;
-      box-sizing: border-box;
-      overflow-x: auto;
-    }
-    .buttons {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
-    button {
-      padding: 18px 0;
-      font-size: 1.2rem;
-      border: none;
-      border-radius: 8px;
-      background: #e0e0e0;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button.operator {
-      background: #ffb74d;
-      color: #fff;
-    }
-    button.equal {
-      background: #4caf50;
-      color: #fff;
-      grid-column: span 2;
-    }
-    button.clear {
-      background: #e57373;
-      color: #fff;
-    }
-    button:active {
-      background: #bdbdbd;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoVision Pro - 실시간 암호화폐 대시보드</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0b0d;
+            --bg-secondary: #16181c;
+            --bg-card: #1e2126;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-green: #00d395;
+            --accent-red: #ff3860;
+            --accent-blue: #3b82f6;
+            --border-color: #2a2d33;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8f9fa;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6c757d;
+            --border-color: #e9ecef;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* 헤더 스타일 */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo i {
+            color: var(--accent-blue);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        /* 메인 컨테이너 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* 통계 카드 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .positive {
+            color: var(--accent-green);
+        }
+
+        .negative {
+            color: var(--accent-red);
+        }
+
+        /* 암호화폐 테이블 */
+        .crypto-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .crypto-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .crypto-table th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .crypto-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .crypto-table tr:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .crypto-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .crypto-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        /* 차트 섹션 */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        /* 포트폴리오 섹션 */
+        .portfolio-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .portfolio-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .portfolio-item:last-child {
+            border-bottom: none;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .crypto-table {
+                font-size: 0.875rem;
+            }
+
+            .crypto-table th,
+            .crypto-table td {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 애니메이션 */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* 알림 배지 */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--accent-red);
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        /* 검색 바 */
+        .search-bar {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 300px;
+        }
+
+        .search-bar input {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            outline: none;
+            width: 100%;
+        }
+
+        .search-bar i {
+            color: var(--text-secondary);
+        }
+    </style>
 </head>
 <body>
-  <div class="calculator">
-    <div class="display" id="display">0</div>
-    <div class="buttons">
-      <button onclick="press('7')">7</button>
-      <button onclick="press('8')">8</button>
-      <button onclick="press('9')">9</button>
-      <button class="operator" onclick="press('/')">÷</button>
-      <button onclick="press('4')">4</button>
-      <button onclick="press('5')">5</button>
-      <button onclick="press('6')">6</button>
-      <button class="operator" onclick="press('*')">×</button>
-      <button onclick="press('1')">1</button>
-      <button onclick="press('2')">2</button>
-      <button onclick="press('3')">3</button>
-      <button class="operator" onclick="press('-')">-</button>
-      <button onclick="press('0')">0</button>
-      <button onclick="press('.')">.</button>
-      <button class="clear" onclick="clearDisplay()">C</button>
-      <button class="operator" onclick="press('+')">+</button>
-      <button class="equal" onclick="calculate()">=</button>
-    </div>
-  </div>
-  <script>
-    let display = document.getElementById('display');
-    let current = '';
-    let resetNext = false;
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>CryptoVision Pro</span>
+            </div>
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="암호화폐 검색...">
+            </div>
+            <div class="nav-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon" id="theme-icon"></i>
+                </button>
+                <div style="position: relative;">
+                    <button class="theme-toggle">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <span class="notification-badge">3</span>
+                </div>
+            </div>
+        </div>
+    </header>
 
-    function press(val) {
-      if (resetNext) {
-        current = '';
-        resetNext = false;
-      }
-      if (val === '.' && current.split(/\+|\-|\*|\//).pop().includes('.')) return;
-      if (current === '' && ['+', '-', '*', '/'].includes(val)) return;
-      current += val;
-      display.textContent = current;
-    }
+    <!-- 메인 컨텐츠 -->
+    <main class="container">
+        <!-- 통계 카드 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">전체 시가총액</div>
+                <div class="stat-value">$2.45T</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+5.23%</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">24시간 거래량</div>
+                <div class="stat-value">$98.5B</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+12.45%</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">비트코인 도미넌스</div>
+                <div class="stat-value">48.3%</div>
+                <div class="stat-change negative">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>-0.85%</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">활성 암호화폐</div>
+                <div class="stat-value">9,842</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+125</span>
+                </div>
+            </div>
+        </div>
 
-    function clearDisplay() {
-      current = '';
-      display.textContent = '0';
-    }
+        <!-- 실시간 암호화폐 가격 -->
+        <div class="crypto-section">
+            <div class="section-header">
+                <h2 class="section-title">실시간 암호화폐 가격</h2>
+                <button class="theme-toggle">
+                    <i class="fas fa-refresh"></i> 새로고침
+                </button>
+            </div>
+            <table class="crypto-table">
+                <thead>
+                    <tr>
+                        <th>순위</th>
+                        <th>이름</th>
+                        <th>가격</th>
+                        <th>24시간 변동</th>
+                        <th>시가총액</th>
+                        <th>거래량(24h)</th>
+                        <th>차트</th>
+                    </tr>
+                </thead>
+                <tbody id="crypto-tbody">
+                    <!-- 동적으로 생성됨 -->
+                </tbody>
+            </table>
+        </div>
 
-    function calculate() {
-      try {
-        let result = eval(current);
-        display.textContent = result;
-        current = result.toString();
-        resetNext = true;
-      } catch {
-        display.textContent = '오류';
-        current = '';
-        resetNext = true;
-      }
-    }
-  </script>
+        <!-- 차트 섹션 -->
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3 class="section-title">시가총액 분포</h3>
+                <div class="chart-container">
+                    <canvas id="marketCapChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3 class="section-title">가격 추세</h3>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 포트폴리오 섹션 -->
+        <div class="portfolio-section">
+            <div class="section-header">
+                <h2 class="section-title">내 포트폴리오</h2>
+                <button class="theme-toggle">
+                    <i class="fas fa-plus"></i> 추가
+                </button>
+            </div>
+            <div class="portfolio-item">
+                <div class="crypto-info">
+                    <div class="crypto-icon">BTC</div>
+                    <div>
+                        <div style="font-weight: 600;">Bitcoin</div>
+                        <div style="color: var(--text-secondary); font-size: 0.875rem;">0.5 BTC</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 600;">$21,500</div>
+                    <div class="stat-change positive" style="font-size: 0.875rem;">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>+5.23%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="portfolio-item">
+                <div class="crypto-info">
+                    <div class="crypto-icon" style="background: #627eea;">ETH</div>
+                    <div>
+                        <div style="font-weight: 600;">Ethereum</div>
+                        <div style="color: var(--text-secondary); font-size: 0.875rem;">2.5 ETH</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 600;">$4,250</div>
+                    <div class="stat-change positive" style="font-size: 0.875rem;">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>+3.15%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 테마 토글
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', newTheme);
+            
+            const icon = document.getElementById('theme-icon');
+            icon.className = newTheme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        // 암호화폐 데이터 (실제로는 API에서 가져옴)
+        const cryptoData = [
+            { rank: 1, symbol: 'BTC', name: 'Bitcoin', price: 43000, change: 5.23, marketCap: 840000000000, volume: 28000000000 },
+            { rank: 2, symbol: 'ETH', name: 'Ethereum', price: 1700, change: 3.15, marketCap: 204000000000, volume: 12000000000 },
+            { rank: 3, symbol: 'BNB', name: 'Binance Coin', price: 245, change: -1.23, marketCap: 37000000000, volume: 890000000 },
+            { rank: 4, symbol: 'SOL', name: 'Solana', price: 98, change: 12.45, marketCap: 42000000000, volume: 2100000000 },
+            { rank: 5, symbol: 'XRP', name: 'Ripple', price: 0.52, change: 2.87, marketCap: 28000000000, volume: 1200000000 },
+        ];
+
+        // 테이블 렌더링
+        function renderCryptoTable() {
+            const tbody = document.getElementById('crypto-tbody');
+            tbody.innerHTML = cryptoData.map(crypto => `
+                <tr>
+                    <td>${crypto.rank}</td>
+                    <td>
+                        <div class="crypto-info">
+                            <div class="crypto-icon" style="background: ${getRandomColor()}">${crypto.symbol}</div>
+                            <div>
+                                <div style="font-weight: 600;">${crypto.name}</div>
+                                <div style="color: var(--text-secondary); font-size: 0.875rem;">${crypto.symbol}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>$${crypto.price.toLocaleString()}</td>
+                    <td class="${crypto.change > 0 ? 'positive' : 'negative'}">
+                        <i class="fas fa-arrow-${crypto.change > 0 ? 'up' : 'down'}"></i>
+                        ${Math.abs(crypto.change)}%
+                    </td>
+                    <td>$${(crypto.marketCap / 1000000000).toFixed(1)}B</td>
+                    <td>$${(crypto.volume / 1000000000).toFixed(1)}B</td>
+                    <td>
+                        <canvas id="sparkline-${crypto.rank}" width="100" height="30"></canvas>
+                    </td>
+                </tr>
+            `).join('');
+
+            // 스파크라인 차트 그리기
+            cryptoData.forEach(crypto => {
+                drawSparkline(`sparkline-${crypto.rank}`, crypto.change > 0);
+            });
+        }
+
+        // 색상 생성
+        function getRandomColor() {
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // 스파크라인 그리기
+        function drawSparkline(canvasId, isPositive) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // 랜덤 데이터 생성
+            const points = Array.from({length: 10}, () => Math.random() * height);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = isPositive ? '#00d395' : '#ff3860';
+            ctx.lineWidth = 2;
+            
+            points.forEach((point, i) => {
+                const x = (width / (points.length - 1)) * i;
+                const y = height - point;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            ctx.stroke();
+        }
+
+        // 시가총액 차트
+        function createMarketCapChart() {
+            const ctx = document.getElementById('marketCapChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: cryptoData.map(c => c.name),
+                    datasets: [{
+                        data: cryptoData.map(c => c.marketCap),
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#a0a0a0',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 가격 추세 차트
+        function createPriceChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1일', '2일', '3일', '4일', '5일', '6일', '7일'],
+                    datasets: [{
+                        label: 'Bitcoin',
+                        data: [41000, 42000, 41500, 43000, 42500, 43500, 43000],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Ethereum',
+                        data: [1600, 1650, 1620, 1700, 1680, 1720, 1700],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#a0a0a0'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#a0a0a0'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#a0a0a0'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCryptoTable();
+            createMarketCapChart();
+            createPriceChart();
+            
+            // 실시간 업데이트 시뮬레이션
+            setInterval(() => {
+                cryptoData.forEach(crypto => {
+                    crypto.price *= (1 + (Math.random() - 0.5) * 0.01);
+                    crypto.change += (Math.random() - 0.5) * 0.5;
+                });
+                renderCryptoTable();
+            }, 5000);
+        });
+    </script>
 </body>
 </html> 
