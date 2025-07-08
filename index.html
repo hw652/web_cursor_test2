@@ -865,12 +865,22 @@
             await updateAllUI();
         }
 
+        // CoinGecko 429 에러 안내
+        function showRateLimitError() {
+            alert('요청이 너무 많아 일시적으로 데이터가 차단되었습니다. 잠시 후 다시 시도해 주세요. (CoinGecko 429 Rate Limit)');
+        }
+
         // TOP 100 암호화폐 데이터
         async function fetchTop100Cryptos() {
             try {
                 const url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d';
                 const res = await fetch('/api/coingecko?url=' + encodeURIComponent(url));
                 const data = await res.json();
+                if (data.error_code === 429 || data.error === 'Proxy fetch failed' && data.detail && data.detail.includes('429')) {
+                    showRateLimitError();
+                    allCryptoData = [];
+                    return;
+                }
                 allCryptoData = data;
                 
                 // 급등/급락 계산
@@ -888,8 +898,11 @@
                 const url = 'https://api.coingecko.com/api/v3/global';
                 const res = await fetch('/api/coingecko?url=' + encodeURIComponent(url));
                 const data = await res.json();
+                if (data.error_code === 429 || data.error === 'Proxy fetch failed' && data.detail && data.detail.includes('429')) {
+                    showRateLimitError();
+                    return;
+                }
                 const globalData = data.data;
-                
                 btcDominance = globalData.market_cap_percentage.btc;
                 totalMarketCap = globalData.total_market_cap.usd;
                 totalVolume = globalData.total_volume.usd;
@@ -1289,11 +1302,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             fetchAllData();
             fetchFearGreedIndex();
-            // 10초마다 실시간 데이터 갱신
+            // 1분마다 실시간 데이터 갱신
             setInterval(() => {
                 fetchAllData();
                 fetchFearGreedIndex();
-            }, 10000);
+            }, 60000);
             
             // 스피너 애니메이션 CSS 추가
             const style = document.createElement('style');
