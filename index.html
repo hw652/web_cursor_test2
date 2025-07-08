@@ -485,14 +485,30 @@
             icon.className = newTheme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
         }
 
-        // 암호화폐 데이터 (실제로는 API에서 가져옴)
-        const cryptoData = [
-            { rank: 1, symbol: 'BTC', name: 'Bitcoin', price: 43000, change: 5.23, marketCap: 840000000000, volume: 28000000000 },
-            { rank: 2, symbol: 'ETH', name: 'Ethereum', price: 1700, change: 3.15, marketCap: 204000000000, volume: 12000000000 },
-            { rank: 3, symbol: 'BNB', name: 'Binance Coin', price: 245, change: -1.23, marketCap: 37000000000, volume: 890000000 },
-            { rank: 4, symbol: 'SOL', name: 'Solana', price: 98, change: 12.45, marketCap: 42000000000, volume: 2100000000 },
-            { rank: 5, symbol: 'XRP', name: 'Ripple', price: 0.52, change: 2.87, marketCap: 28000000000, volume: 1200000000 },
-        ];
+        // CoinGecko API에서 실시간 데이터 가져오기
+        const coinIds = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'ripple'];
+        let cryptoData = [];
+
+        async function fetchCryptoData() {
+            const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds.join(',')}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                cryptoData = data.map((coin, idx) => ({
+                    rank: coin.market_cap_rank,
+                    symbol: coin.symbol.toUpperCase(),
+                    name: coin.name,
+                    price: coin.current_price,
+                    change: coin.price_change_percentage_24h,
+                    marketCap: coin.market_cap,
+                    volume: coin.total_volume,
+                    image: coin.image
+                }));
+                renderCryptoTable();
+            } catch (e) {
+                console.error('API 오류:', e);
+            }
+        }
 
         // 테이블 렌더링
         function renderCryptoTable() {
@@ -502,7 +518,7 @@
                     <td>${crypto.rank}</td>
                     <td>
                         <div class="crypto-info">
-                            <div class="crypto-icon" style="background: ${getRandomColor()}">${crypto.symbol}</div>
+                            <img src="${crypto.image}" alt="${crypto.symbol}" class="crypto-icon" style="background: none; width:32px; height:32px;" />
                             <div>
                                 <div style="font-weight: 600;">${crypto.name}</div>
                                 <div style="color: var(--text-secondary); font-size: 0.875rem;">${crypto.symbol}</div>
@@ -512,7 +528,7 @@
                     <td>$${crypto.price.toLocaleString()}</td>
                     <td class="${crypto.change > 0 ? 'positive' : 'negative'}">
                         <i class="fas fa-arrow-${crypto.change > 0 ? 'up' : 'down'}"></i>
-                        ${Math.abs(crypto.change)}%
+                        ${crypto.change ? crypto.change.toFixed(2) : '0.00'}%
                     </td>
                     <td>$${(crypto.marketCap / 1000000000).toFixed(1)}B</td>
                     <td>$${(crypto.volume / 1000000000).toFixed(1)}B</td>
@@ -522,7 +538,7 @@
                 </tr>
             `).join('');
 
-            // 스파크라인 차트 그리기
+            // 스파크라인 차트 그리기 (임시 랜덤)
             cryptoData.forEach(crypto => {
                 drawSparkline(`sparkline-${crypto.rank}`, crypto.change > 0);
             });
@@ -534,7 +550,7 @@
             return colors[Math.floor(Math.random() * colors.length)];
         }
 
-        // 스파크라인 그리기
+        // 스파크라인 그리기 (임시 랜덤)
         function drawSparkline(canvasId, isPositive) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -564,7 +580,7 @@
             ctx.stroke();
         }
 
-        // 시가총액 차트
+        // 시가총액 차트 (임시 하드코딩)
         function createMarketCapChart() {
             const ctx = document.getElementById('marketCapChart').getContext('2d');
             new Chart(ctx, {
@@ -599,26 +615,29 @@
             });
         }
 
-        // 가격 추세 차트
+        // 가격 추세 차트 (임시 하드코딩)
         function createPriceChart() {
             const ctx = document.getElementById('priceChart').getContext('2d');
             new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: ['1일', '2일', '3일', '4일', '5일', '6일', '7일'],
-                    datasets: [{
-                        label: 'Bitcoin',
-                        data: [41000, 42000, 41500, 43000, 42500, 43500, 43000],
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4
-                    }, {
-                        label: 'Ethereum',
-                        data: [1600, 1650, 1620, 1700, 1680, 1720, 1700],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.4
-                    }]
+                    datasets: [
+                        {
+                            label: cryptoData[0]?.name || 'Bitcoin',
+                            data: [41000, 42000, 41500, 43000, 42500, 43500, 43000],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: cryptoData[1]?.name || 'Ethereum',
+                            data: [1600, 1650, 1620, 1700, 1680, 1720, 1700],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -654,17 +673,12 @@
 
         // 초기화
         document.addEventListener('DOMContentLoaded', () => {
-            renderCryptoTable();
+            fetchCryptoData();
             createMarketCapChart();
             createPriceChart();
-            
-            // 실시간 업데이트 시뮬레이션
+            // 5초마다 실시간 데이터 갱신
             setInterval(() => {
-                cryptoData.forEach(crypto => {
-                    crypto.price *= (1 + (Math.random() - 0.5) * 0.01);
-                    crypto.change += (Math.random() - 0.5) * 0.5;
-                });
-                renderCryptoTable();
+                fetchCryptoData();
             }, 5000);
         });
     </script>
