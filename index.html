@@ -823,6 +823,7 @@
         let totalMarketCap = 0;
         let totalVolume = 0;
         let ethGasPrice = 0;
+        let trendingCoins = [];
 
         // 테마 토글
         function toggleTheme() {
@@ -861,7 +862,7 @@
                 fetchTrendingCoins(),
                 fetchEthGasPrice()
             ]);
-            updateAllUI();
+            await updateAllUI();
         }
 
         // TOP 100 암호화폐 데이터
@@ -900,28 +901,32 @@
             try {
                 const res = await fetch('https://api.coingecko.com/api/v3/search/trending');
                 const data = await res.json();
-                // 트렌딩 데이터 처리
+                trendingCoins = data.coins.map(c => c.item);
             } catch (e) {
-                console.error('트렌딩 API 오류:', e);
+                trendingCoins = [];
             }
         }
 
-        // ETH 가스 가격 (대체 API 또는 하드코딩)
+        // ETH 가스 가격 (Etherscan API)
         async function fetchEthGasPrice() {
-            // Etherscan API 또는 다른 소스 사용
-            // 여기서는 예시로 하드코딩
-            ethGasPrice = Math.floor(Math.random() * 50) + 20;
+            try {
+                const res = await fetch('https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=CXTB4IUT31N836G93ZI3YQBEWBQEGGH5QS');
+                const data = await res.json();
+                ethGasPrice = parseInt(data.result.ProposeGasPrice);
+            } catch (e) {
+                ethGasPrice = 0;
+            }
         }
 
         // 모든 UI 업데이트
-        function updateAllUI() {
+        async function updateAllUI() {
             updateStatCards();
             updateTicker();
             renderCryptoTable();
             updateMovers();
             updateCharts();
-            updateNews();
-            updateExchangePrices();
+            await updateNews();
+            await updateExchangePrices();
         }
 
         // 상단 통계 카드 업데이트
@@ -1050,54 +1055,66 @@
                 </div>
             `).join('');
             document.getElementById('top-losers').innerHTML = losersHTML;
+
+            // 트렌딩 코인 표시
+            if (trendingCoins.length > 0) {
+                const trendingHTML = trendingCoins.slice(0, 5).map(c => `
+                    <div style="font-size:0.85em; color:var(--accent-blue); margin-top:0.5em;">
+                        <i class="fas fa-bolt"></i> ${c.symbol.toUpperCase()} (${c.name})
+                    </div>
+                `).join('');
+                document.getElementById('top-gainers').innerHTML += `<div style="margin-top:1em;">트렌딩: ${trendingHTML}</div>`;
+            }
         }
 
-        // 뉴스 업데이트 (예시 데이터)
-        function updateNews() {
-            const newsHTML = `
-                <div class="news-item">
-                    <div class="news-title">비트코인, 역대 최고가 경신 임박</div>
-                    <div class="news-time">5분 전</div>
-                </div>
-                <div class="news-item">
-                    <div class="news-title">이더리움 2.0 업그레이드 완료</div>
-                    <div class="news-time">1시간 전</div>
-                </div>
-                <div class="news-item">
-                    <div class="news-title">SEC, 새로운 암호화폐 규제안 발표</div>
-                    <div class="news-time">3시간 전</div>
-                </div>
-            `;
-            document.getElementById('crypto-news').innerHTML = newsHTML;
+        // 뉴스 업데이트 (cryptopanic API)
+        async function updateNews() {
+            try {
+                const res = await fetch('https://cryptopanic.com/api/v1/posts/?auth_token=demo&public=true');
+                const data = await res.json();
+                const newsHTML = data.results.slice(0, 5).map(item => `
+                    <div class="news-item">
+                        <a href="${item.url}" target="_blank" class="news-title">${item.title}</a>
+                        <div class="news-time">${new Date(item.published_at).toLocaleString()}</div>
+                    </div>
+                `).join('');
+                document.getElementById('crypto-news').innerHTML = newsHTML;
+            } catch (e) {
+                document.getElementById('crypto-news').innerHTML = '<div class="news-item">뉴스를 불러올 수 없습니다.</div>';
+            }
         }
 
-        // 거래소별 가격 차이 (예시)
-        function updateExchangePrices() {
-            const btcPrice = allCryptoData.find(coin => coin.id === 'bitcoin')?.current_price || 0;
-            const exchangeHTML = `
-                <div class="exchange-item">
-                    <span class="exchange-name">Binance</span>
-                    <div class="exchange-price">
-                        <div class="price-value">$${btcPrice.toLocaleString()}</div>
-                        <div class="price-diff">기준가</div>
+        // 거래소별 가격 차이 (CoinGecko API)
+        async function updateExchangePrices() {
+            try {
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,krw');
+                const data = await res.json();
+                const btc_usd = data.bitcoin.usd;
+                const btc_krw = data.bitcoin.krw;
+                // Upbit(원화)는 환율로 환산
+                const usdkrw = btc_krw / btc_usd;
+                const upbit_usd = btc_krw / usdkrw;
+                const diff = ((upbit_usd - btc_usd) / btc_usd) * 100;
+                const exchangeHTML = `
+                    <div class="exchange-item">
+                        <span class="exchange-name">Binance</span>
+                        <div class="exchange-price">
+                            <div class="price-value">$${btc_usd.toLocaleString()}</div>
+                            <div class="price-diff">기준가</div>
+                        </div>
                     </div>
-                </div>
-                <div class="exchange-item">
-                    <span class="exchange-name">Upbit</span>
-                    <div class="exchange-price">
-                        <div class="price-value">$${(btcPrice * 1.02).toLocaleString()}</div>
-                        <div class="price-diff positive">+2.0%</div>
+                    <div class="exchange-item">
+                        <span class="exchange-name">Upbit (KRW)</span>
+                        <div class="exchange-price">
+                            <div class="price-value">₩${btc_krw.toLocaleString()}</div>
+                            <div class="price-diff ${diff > 0 ? 'positive' : 'negative'}">${diff > 0 ? '+' : ''}${diff.toFixed(2)}%</div>
+                        </div>
                     </div>
-                </div>
-                <div class="exchange-item">
-                    <span class="exchange-name">Coinbase</span>
-                    <div class="exchange-price">
-                        <div class="price-value">$${(btcPrice * 0.995).toLocaleString()}</div>
-                        <div class="price-diff negative">-0.5%</div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('exchange-prices').innerHTML = exchangeHTML;
+                `;
+                document.getElementById('exchange-prices').innerHTML = exchangeHTML;
+            } catch (e) {
+                document.getElementById('exchange-prices').innerHTML = '<div class="exchange-item">가격 정보를 불러올 수 없습니다.</div>';
+            }
         }
 
         // 스파크라인 그리기 (실제 데이터)
@@ -1250,13 +1267,27 @@
             });
         }
 
+        // 공포&탐욕 지수 API 연동
+        async function fetchFearGreedIndex() {
+            try {
+                const res = await fetch('https://api.alternative.me/fng/?limit=1');
+                const data = await res.json();
+                const value = data.data[0].value;
+                const text = data.data[0].value_classification;
+                document.querySelector('#fear-greed .value').textContent = `${value} (${text})`;
+            } catch (e) {
+                document.querySelector('#fear-greed .value').textContent = '--';
+            }
+        }
+
         // 초기화
         document.addEventListener('DOMContentLoaded', () => {
             fetchAllData();
-            
+            fetchFearGreedIndex();
             // 10초마다 실시간 데이터 갱신
             setInterval(() => {
                 fetchAllData();
+                fetchFearGreedIndex();
             }, 10000);
             
             // 스피너 애니메이션 CSS 추가
@@ -1271,5 +1302,4 @@
         });
     </script>
 </body>
-</html> 
 </html> 
